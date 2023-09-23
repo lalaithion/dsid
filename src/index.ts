@@ -91,6 +91,34 @@ export class Dict<T> {
     return new Dict(this.depth, items_copy);
   }
 
+  merge(other: Dict<T>): Dict<T> {
+    let new_items = Array(32);
+
+    for (let i = 0; i < 32; i++) {
+      if (this.items[i] !== undefined && other.items[i] !== undefined) {
+        let new_entry_next = this.items[i]!.next.merge(other.items[i]!.next);
+        new_entry_next = new_entry_next.set(
+          other.items[i]!.key,
+          other.items[i]!.value
+        );
+        let new_entry = new DictEntry(
+          this.items[i]!.key,
+          this.items[i]!.value,
+          new_entry_next
+        );
+        new_items[i] = new_entry;
+      } else if (this.items[i] === undefined) {
+        new_items[i] = other.items[i];
+      } else if (other.items[i] === undefined) {
+        new_items[i] = this.items[i];
+      } else {
+        // do nothing
+      }
+    }
+
+    return new Dict(this.depth, new_items);
+  }
+
   forEach(f: (k: string, v: T) => void): void {
     this.items.forEach((item) => {
       if (item != undefined) {
@@ -117,11 +145,9 @@ export class Dict<T> {
     return res;
   }
 
+  // assign is a wrapper around merge for naming consistency with Object.assign
   assign(other: Dict<T>): Dict<T> {
-    this.forEach((key, value) => {
-      other = other.set(key, value);
-    });
-    return other;
+    return this.merge(other);
   }
 
   static fromEntries<T>(entries: [string, T][]): Dict<T> {
