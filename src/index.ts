@@ -53,9 +53,9 @@ export class Dict<T> {
 
   toObject(): any {
     let res: any = {};
-    for (const item of this.getItems()) {
-      res[item[0]] = item[1];
-    }
+    this.forEach((key, value) => {
+      res[key] = value;
+    });
     return res;
   }
 
@@ -91,23 +91,44 @@ export class Dict<T> {
     return new Dict(this.depth, items_copy);
   }
 
-  getItems(): [string, T][] {
-    let res: [string, T][] = [];
+  forEach(f: (k: string, v: T) => void): void {
     this.items.forEach((item) => {
       if (item != undefined) {
-        res.push([item.key, item.value]);
-        res.push(...item.next.getItems());
+        f(item.key, item.value);
+        item.next.forEach(f);
       }
+    });
+  }
+
+  entries(): [string, T][] {
+    let res: [string, T][] = [];
+    this.forEach((key, value) => {
+      res.push([key, value]);
     });
     return res;
   }
 
   toString(): string {
     let res = "{";
-    for (const item of this.getItems()) {
-      res += `${item[0]}: ${item[1]}, `;
-    }
+    this.forEach((key, value) => {
+      res += `${key}: ${value}, `;
+    });
     res = res.slice(0, -2) + "}";
+    return res;
+  }
+
+  assign(other: Dict<T>): Dict<T> {
+    this.forEach((key, value) => {
+      other = other.set(key, value);
+    });
+    return other;
+  }
+
+  static fromEntries<T>(entries: [string, T][]): Dict<T> {
+    let res = new Dict<T>();
+    for (const item of entries) {
+      res = res.set(item[0], item[1]);
+    }
     return res;
   }
 }
