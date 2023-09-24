@@ -27,6 +27,22 @@ class DictEntry<T> {
   }
 }
 
+// Dict is a 32-way Hash Array Mapped Trie, which is a fancy way of saying
+// it's a hashmap with itself, recursively, as the values. It's an efficient
+// immutable data structure for representing a map of strings to values, which
+// is useful for react's style of immutable state updates.
+//
+// Since it's a trie, it's technically O(log(n)) to read and write, but since
+// it's a 32 way trie, it's effectively O(1) for all practical purposes. For
+// example, a dictionary with a maximum depth of 4 can store 2^20 (~1 million)
+// entries, so we're not doing a lot of pointer chasing. However, the average
+// dictionary with 2^20 entries will not have a depth of 4, because we run into
+// birthday-style collisions, so the average maximum depth will be around 8.
+//
+// If you're copying this code instead of importing it as a library (which is
+// highly encouraged) then you can change the breadth of the trie to a smaller
+// value for more performant small objects or a larger value for more performant
+// large objects.
 export class Dict<T> {
   readonly depth: number;
   readonly items: (DictEntry<T> | undefined)[];
@@ -149,6 +165,22 @@ export class Dict<T> {
     let res: [string, T][] = [];
     this.forEach((key, value) => {
       res.push([key, value]);
+    });
+    return res;
+  }
+
+  keys(): string[] {
+    let res: string[] = [];
+    this.forEach((key, _) => {
+      res.push(key);
+    });
+    return res;
+  }
+
+  values(): T[] {
+    let res: T[] = [];
+    this.forEach((_, value) => {
+      res.push(value);
     });
     return res;
   }
