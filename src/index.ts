@@ -44,19 +44,37 @@ class DictEntry<T> {
 // value for more performant small objects or a larger value for more performant
 // large objects.
 export class Dict<T> {
+  static BREADTH = 32;
+
   readonly depth: number;
   readonly items: (DictEntry<T> | undefined)[];
 
-  constructor(
+  private constructor(
     depth: number = 0,
     items: undefined | (DictEntry<T> | undefined)[] = undefined
   ) {
     this.depth = depth;
     if (items === undefined) {
-      this.items = Array(32); // Sparse array, which is kinda cool and kinda horrifying
+      // Lots of documentation for HAMTs says that the trie should use a bitmap
+      // along with a dynamic-length array to avoid allocating 32 pointers for
+      // empty entries. Luckily, javascript already handles sparse arrays for us,
+      // so we don't have to do anything complicated.
+      this.items = Array(Dict.BREADTH);
     } else {
       this.items = items;
     }
+  }
+
+  static empty<T>(): Dict<T> {
+    return new Dict();
+  }
+
+  static of<T>(...entries: [string, T][]): Dict<T> {
+    let res = new Dict<T>();
+    for (const [key, value] of entries) {
+      res = res.set(key, value);
+    }
+    return res;
   }
 
   static fromObject(x: any): Dict<any> {
@@ -76,7 +94,7 @@ export class Dict<T> {
   }
 
   get(k: string): T | undefined {
-    const idx = hash(k, this.depth) % 32;
+    const idx = hash(k, this.depth) % Dict.BREADTH;
     const entry = this.items[idx];
 
     if (entry === undefined) {
@@ -91,7 +109,7 @@ export class Dict<T> {
   }
 
   set(k: string, v: T): Dict<T> {
-    const idx = hash(k, this.depth) % 32;
+    const idx = hash(k, this.depth) % Dict.BREADTH;
     const entry = this.items[idx];
     let items_copy = this.items.map((x) => x);
 
@@ -108,9 +126,9 @@ export class Dict<T> {
   }
 
   merge(other: Dict<T>): Dict<T> {
-    let new_items = Array(32);
+    let new_items = Array(Dict.BREADTH);
 
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < Dict.BREADTH; i++) {
       const this_item = this.items[i];
       const other_item = other.items[i];
       if (this_item !== undefined && other_item !== undefined) {
@@ -135,7 +153,7 @@ export class Dict<T> {
   }
 
   delete(key: string): Dict<T> {
-    const idx = hash(key, this.depth) % 32;
+    const idx = hash(key, this.depth) % Dict.BREADTH;
     const item = this.items[idx];
 
     if (item === undefined) {
