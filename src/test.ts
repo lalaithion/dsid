@@ -53,7 +53,7 @@ function perf_dict() {
     let start = Date.now();
     let keyCounter = new Set();
 
-    let x: Dict<number> = new Dict();
+    let x: Dict<number> = Dict.empty();
 
     for (let i = 0; i < 500; i++) {
       for (let j = 0; j < 500; j++) {
