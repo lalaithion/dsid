@@ -95,28 +95,45 @@ export class Dict<T> {
     let new_items = Array(32);
 
     for (let i = 0; i < 32; i++) {
-      if (this.items[i] !== undefined && other.items[i] !== undefined) {
-        let new_entry_next = this.items[i]!.next.merge(other.items[i]!.next);
-        new_entry_next = new_entry_next.set(
-          other.items[i]!.key,
-          other.items[i]!.value
-        );
+      let this_item = this.items[i];
+      let other_item = other.items[i];
+      if (this_item !== undefined && other_item !== undefined) {
+        let new_entry_next = this_item.next.merge(other_item.next);
+        new_entry_next = new_entry_next.set(other_item.key, other_item.value);
         let new_entry = new DictEntry(
-          this.items[i]!.key,
-          this.items[i]!.value,
+          this_item.key,
+          this_item.value,
           new_entry_next
         );
         new_items[i] = new_entry;
-      } else if (this.items[i] === undefined) {
-        new_items[i] = other.items[i];
-      } else if (other.items[i] === undefined) {
-        new_items[i] = this.items[i];
+      } else if (this_item !== undefined) {
+        new_items[i] = this_item;
+      } else if (other_item !== undefined) {
+        new_items[i] = other_item;
       } else {
         // do nothing
       }
     }
 
     return new Dict(this.depth, new_items);
+  }
+
+  delete(key: string): Dict<T> {
+    let idx = hash(key, this.depth) % 32;
+    let item = this.items[idx];
+
+    if (item === undefined) {
+      return this;
+    }
+
+    if (item.key === key) {
+      let items_copy = this.items.map((x) => x);
+      items_copy[idx] = undefined;
+      let result = new Dict(this.depth, items_copy);
+      return result.merge(item.next);
+    }
+
+    return item.next.delete(key);
   }
 
   forEach(f: (k: string, v: T) => void): void {
